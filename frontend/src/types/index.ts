@@ -12,6 +12,14 @@ export type Page =
 
 export type Role = 'Fleet Manager' | 'Dispatcher' | 'Safety Officer' | 'Financial Analyst';
 
+export interface AuthUser {
+  id: string;
+  name: string;
+  company: string;
+  email: string;
+  role: Role;
+}
+
 export type VehicleStatus = 'Available' | 'In Trip' | 'Maintenance';
 export type DriverStatus = 'On Duty' | 'Off Duty' | 'On Trip' | 'Suspended';
 

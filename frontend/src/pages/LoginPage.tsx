@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, ShieldCheck, Route, Users, DollarSign } from 'lucide-react';
-import { Page, Role } from '../types';
+import { loginUser, saveSession } from '../api/auth';
+import { AuthUser, Page, Role } from '../types';
 
 interface LoginPageProps {
   onNavigate: (page: Page) => void;
+  onAuthenticated: (user: AuthUser) => void;
 }
 
 const roleOptions: { value: Role; icon: typeof ShieldCheck; desc: string }[] = [
@@ -13,56 +15,37 @@ const roleOptions: { value: Role; icon: typeof ShieldCheck; desc: string }[] = [
   { value: 'Financial Analyst', icon: DollarSign, desc: 'Costs & reports' },
 ];
 
-export default function LoginPage({ onNavigate }: LoginPageProps) {
+export default function LoginPage({ onNavigate, onAuthenticated }: LoginPageProps) {
   const [showPwd, setShowPwd] = useState(false);
   const [role, setRole] = useState<Role>('Fleet Manager');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+
+    if (!email.trim() || !password) {
+      setError('Enter your email and password to continue.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await loginUser(email.trim(), password);
+      saveSession(response.data.user, response.data.token);
+      onAuthenticated(response.data.user);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to sign in. Check your details.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#111827] flex">
-      {/* Left panel — branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-[#1f2937] to-[#111827] flex-col justify-between p-12">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-72 h-72 bg-amber-500/5 rounded-full blur-3xl"></div>
-
-        <div className="relative flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center amber-glow">
-            <Zap className="w-5 h-5 text-gray-900" fill="currentColor" />
-          </div>
-          <span className="font-bold text-lg text-white">TransitOps</span>
-        </div>
-
-        <div className="relative">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 mb-6">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-amber-400 text-xs font-medium">AI-Powered Operations</span>
-          </div>
-          <h1 className="text-4xl font-bold text-white leading-tight mb-4">
-            Welcome back to your<br />fleet command center
-          </h1>
-          <p className="text-gray-400 text-lg max-w-md">
-            Monitor vehicles, dispatch trips, and optimize costs — all from one intelligent dashboard.
-          </p>
-          <div className="flex items-center gap-6 mt-8">
-            <div>
-              <p className="text-3xl font-bold text-amber-400">99.9%</p>
-              <p className="text-gray-500 text-sm">Uptime</p>
-            </div>
-            <div className="w-px h-12 bg-gray-700"></div>
-            <div>
-              <p className="text-3xl font-bold text-amber-400">500+</p>
-              <p className="text-gray-500 text-sm">Fleets managed</p>
-            </div>
-            <div className="w-px h-12 bg-gray-700"></div>
-            <div>
-              <p className="text-3xl font-bold text-amber-400">34%</p>
-              <p className="text-gray-500 text-sm">Avg. cost savings</p>
-            </div>
-          </div>
-        </div>
-
-        <p className="relative text-gray-600 text-sm">© 2024 TransitOps. All rights reserved.</p>
-      </div>
-
       {/* Right panel — form */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
@@ -76,14 +59,17 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
           <h2 className="text-2xl font-bold text-white mb-2">Sign in to your account</h2>
           <p className="text-gray-400 text-sm mb-8">Enter your credentials to access the dashboard</p>
 
-          <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); onNavigate('dashboard'); }}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <label className="text-gray-400 text-xs font-medium mb-1.5 block">Email Address</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
+                  autoComplete="email"
                   className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 focus:bg-gray-800 transition"
                 />
               </div>
@@ -98,7 +84,10 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
                   type={showPwd ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-10 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 focus:bg-gray-800 transition"
                 />
                 <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
@@ -142,8 +131,18 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
               </label>
             </div>
 
-            <button type="submit" className="w-full bg-amber-500 text-gray-900 font-semibold py-3 rounded-lg hover:bg-amber-400 transition flex items-center justify-center gap-2 amber-glow">
-              Sign In as {role} <ArrowRight className="w-4 h-4" />
+            {error && (
+              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-amber-500 text-gray-900 font-semibold py-3 rounded-lg hover:bg-amber-400 transition flex items-center justify-center gap-2 amber-glow disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Checking details...' : `Sign In as ${role}`} <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
@@ -171,7 +170,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
             </button>
           </p>
 
-          <button onClick={() => onNavigate('landing')} className="block mx-auto mt-4 text-gray-600 text-xs hover:text-gray-400 transition">
+          <button onClick={() => onNavigate('signup')} className="block mx-auto mt-4 text-gray-600 text-xs hover:text-gray-400 transition">
             ← Back to home
           </button>
         </div>

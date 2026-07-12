@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { Zap, User, Mail, Lock, Eye, EyeOff, ArrowRight, Building2, Check, ShieldCheck, Route, Users, DollarSign } from 'lucide-react';
-import { Page, Role } from '../types';
+import { FormEvent, useState } from 'react';
+import { Zap, User, Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, Route, Users, DollarSign, CheckCircle } from 'lucide-react';
+import { saveSession, signupUser } from '../api/auth';
+import { AuthUser, Page, Role } from '../types';
 
 interface SignupPageProps {
   onNavigate: (page: Page) => void;
+  onAuthenticated: (user: AuthUser) => void;
 }
 
 const roleOptions: { value: Role; icon: typeof ShieldCheck; desc: string }[] = [
@@ -13,15 +15,51 @@ const roleOptions: { value: Role; icon: typeof ShieldCheck; desc: string }[] = [
   { value: 'Financial Analyst', icon: DollarSign, desc: 'Costs & reports' },
 ];
 
-export default function SignupPage({ onNavigate }: SignupPageProps) {
+export default function SignupPage({ onNavigate, onAuthenticated }: SignupPageProps) {
   const [showPwd, setShowPwd] = useState(false);
   const [agree, setAgree] = useState(false);
   const [role, setRole] = useState<Role>('Fleet Manager');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+
+    if (!name.trim() || !email.trim() || !password) {
+      setError('Complete all account details to continue.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+
+    if (!agree) {
+      setError('Accept the terms to create your account.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await signupUser(name.trim(), 'TransitOps', email.trim(), password, role);
+      saveSession(response.data.user, response.data.token);
+      onAuthenticated(response.data.user);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create account. Check your details.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#111827] flex">
-      {/* Left panel — form */}
-      <div className="flex-1 flex items-center justify-center p-6 order-2 lg:order-1">
+      {/* Form */}
+      <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2.5 mb-8 justify-center">
             <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center amber-glow">
@@ -31,28 +69,19 @@ export default function SignupPage({ onNavigate }: SignupPageProps) {
           </div>
 
           <h2 className="text-2xl font-bold text-white mb-2">Create your account</h2>
-          <p className="text-gray-400 text-sm mb-8">Start your 14-day free trial. No credit card required.</p>
+          <div className="mb-8" />
 
-          <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); onNavigate('dashboard'); }}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <label className="text-gray-400 text-xs font-medium mb-1.5 block">Full Name</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
                   type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
-                  className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 focus:bg-gray-800 transition"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-gray-400 text-xs font-medium mb-1.5 block">Company Name</label>
-              <div className="relative">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Acme Logistics"
+                  autoComplete="name"
                   className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 focus:bg-gray-800 transition"
                 />
               </div>
@@ -64,7 +93,10 @@ export default function SignupPage({ onNavigate }: SignupPageProps) {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
+                  autoComplete="email"
                   className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 focus:bg-gray-800 transition"
                 />
               </div>
@@ -76,7 +108,10 @@ export default function SignupPage({ onNavigate }: SignupPageProps) {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
                   type={showPwd ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Create a strong password"
+                  autoComplete="new-password"
                   className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-10 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 focus:bg-gray-800 transition"
                 />
                 <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
@@ -131,12 +166,18 @@ export default function SignupPage({ onNavigate }: SignupPageProps) {
               </span>
             </label>
 
-            <button 
-              type="submit" 
-              disabled={!agree}
+            {error && (
+              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={!agree || loading}
               className="w-full bg-amber-500 text-gray-900 font-semibold py-3 rounded-lg hover:bg-amber-400 transition flex items-center justify-center gap-2 amber-glow disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create Account as {role} <ArrowRight className="w-4 h-4" />
+              {loading ? 'Creating account...' : `Create Account as ${role}`} <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
@@ -164,66 +205,12 @@ export default function SignupPage({ onNavigate }: SignupPageProps) {
             </button>
           </p>
 
-          <button onClick={() => onNavigate('landing')} className="block mx-auto mt-4 text-gray-600 text-xs hover:text-gray-400 transition">
+          <button onClick={() => onNavigate('login')} className="block mx-auto mt-4 text-gray-600 text-xs hover:text-gray-400 transition">
             ← Back to home
           </button>
         </div>
       </div>
 
-      {/* Right panel — branding + benefits */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-[#1f2937] to-[#111827] flex-col justify-between p-12 order-1 lg:order-2">
-        <div className="absolute top-20 right-20 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 left-10 w-72 h-72 bg-amber-500/5 rounded-full blur-3xl"></div>
-
-        <div className="relative flex items-center gap-2.5 justify-end">
-          <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center amber-glow">
-            <Zap className="w-5 h-5 text-gray-900" fill="currentColor" />
-          </div>
-          <span className="font-bold text-lg text-white">TransitOps</span>
-        </div>
-
-        <div className="relative">
-          <h1 className="text-4xl font-bold text-white leading-tight mb-4">
-            Start optimizing<br />your fleet today
-          </h1>
-          <p className="text-gray-400 text-lg max-w-md mb-8">
-            Join hundreds of transport companies saving time and money with TransitOps.
-          </p>
-          <div className="space-y-4">
-            {[
-              '14-day free trial — no credit card required',
-              'Set up in minutes with our intuitive dashboard',
-              'AI-powered insights from day one',
-              'Cancel anytime, no long-term contracts',
-            ].map((b, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
-                  <Check className="w-3.5 h-3.5 text-amber-400" />
-                </div>
-                <span className="text-gray-300 text-sm">{b}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative p-5 rounded-2xl bg-gray-800/50 border border-gray-700/50">
-          <div className="flex items-center gap-1 mb-2">
-            {[...Array(5)].map((_, j) => (
-              <svg key={j} className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-            ))}
-          </div>
-          <p className="text-gray-300 text-sm leading-relaxed">"TransitOps transformed how we manage our fleet. The AI insights alone paid for the subscription in the first month."</p>
-          <div className="flex items-center gap-3 mt-4">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-gray-900 text-xs font-bold">SM</div>
-            <div>
-              <p className="text-white text-sm font-medium">Sarah Mitchell</p>
-              <p className="text-gray-500 text-xs">Fleet Director, LogiCorp</p>
-            </div>
-          </div>
-        </div>
-
-        <p className="relative text-gray-600 text-sm text-right">© 2024 TransitOps. All rights reserved.</p>
-      </div>
     </div>
   );
 }

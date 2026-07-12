@@ -44,7 +44,7 @@ export default function AIOpsPanel() {
           </div>
           <div>
             <h3 className="text-white font-semibold text-sm">AI Operations</h3>
-            <p class="text-gray-500 text-xs">Smart insights & recommendations</p>
+            <p className="text-gray-500 text-xs">Smart insights & recommendations</p>
           </div>
         </div>
         <span className="flex items-center gap-1.5 text-[10px] font-medium text-amber-400 bg-amber-500/10 px-2 py-1 rounded-full">

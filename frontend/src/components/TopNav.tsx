@@ -6,11 +6,12 @@ interface TopNavProps {
   onMenuClick: () => void;
   role: Role;
   onRoleChange: (r: Role) => void;
+  onSignOut: () => void;
 }
 
 const roles: Role[] = ['Fleet Manager', 'Dispatcher', 'Safety Officer', 'Financial Analyst'];
 
-export default function TopNav({ onMenuClick, role, onRoleChange }: TopNavProps) {
+export default function TopNav({ onMenuClick, role, onRoleChange, onSignOut }: TopNavProps) {
   const [roleOpen, setRoleOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const roleRef = useRef<HTMLDivElement>(null);
@@ -47,7 +48,7 @@ export default function TopNav({ onMenuClick, role, onRoleChange }: TopNavProps)
         </button>
 
         <div className="relative" ref={notifRef}>
-          <button 
+          <button
             onClick={() => setNotifOpen(!notifOpen)}
             className="relative w-9 h-9 rounded-lg bg-gray-800/50 border border-gray-700/50 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-800 transition"
           >
@@ -91,7 +92,7 @@ export default function TopNav({ onMenuClick, role, onRoleChange }: TopNavProps)
         </div>
 
         <div className="relative" ref={roleRef}>
-          <button 
+          <button
             onClick={() => setRoleOpen(!roleOpen)}
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gray-800/50 border border-gray-700/50 hover:bg-gray-800 transition"
           >
@@ -122,7 +123,7 @@ export default function TopNav({ onMenuClick, role, onRoleChange }: TopNavProps)
                 <button className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-gray-700/50 transition">
                   Account Settings
                 </button>
-                <button className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-gray-700/50 transition">
+                <button className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-gray-700/50 transition" onClick={onSignOut}>
                   Sign Out
                 </button>
               </div>

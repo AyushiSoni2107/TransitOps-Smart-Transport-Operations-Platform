@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MapPin, Navigation, User, Truck, Clock, Route, Send, CheckCircle2, Circle, Loader2 } from 'lucide-react';
-import { Card, PageHeader, StatusBadge, Button } from '../components/ui';
+import { Card, PageHeader, Button } from '../components/ui';
 import { drivers, vehicles } from '../data/mockData';
 
 export default function TripsPage() {

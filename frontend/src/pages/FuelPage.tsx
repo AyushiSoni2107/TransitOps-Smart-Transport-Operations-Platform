@@ -1,6 +1,6 @@
 import { Download, Fuel, DollarSign, TrendingDown, Receipt } from 'lucide-react';
 import { Card, PageHeader, Button } from '../components/ui';
-import { AreaChart, BarChart } from '../components/Charts';
+import { AreaChart } from '../components/Charts';
 
 const fuelLogs = [
   { id: 'FL001', vehicle: 'TRUCK-3', date: '2024-07-12', liters: 120, cost: '$180', station: 'Shell A14' },
